@@ -27,6 +27,34 @@ This repository contains the implementation of Stage 1 (Data Extraction with Ath
 
 **Key Achievement**: Zero manual intervention required from upload to results delivery.
 
+## Stages Implemented
+### Stage 1: Data Extraction with Athena
+
+Extract key facility metrics from nested JSON data in S3
+Handle complex nested structures (services, labs, accreditations)
+Create external tables with proper schema definitions
+Generate comprehensive facility metrics using UNNEST operations
+Save query results to S3 in JSON format
+
+### Stage 3: Event-Driven Processing with Lambda
+
+Automatic triggering on JSON file uploads to S3
+Execute Athena queries to count accredited facilities by state
+Intelligent timeout and retry handling mechanisms
+Store results in multiple formats (JSON and CSV)
+Comprehensive error handling and CloudWatch logging
+Dead Letter Queue for failed invocations
+
+## Tools Used
+
+AWS Lambda: Serverless compute for event-driven processing
+Amazon Athena: Serverless SQL analytics for querying S3 data
+Amazon S3: Data storage for input files and query results
+AWS Glue Data Catalog: Schema registry and metadata store
+CloudWatch: Monitoring, logging, and alerting
+IAM: Secure access control and permissions management
+CloudFormation: Infrastructure as Code for reproducible deployments
+
 ## 🏗️ Architecture
 
 ![Architecture Diagram](docs/architecture/architecture-diagram.png)
@@ -48,25 +76,6 @@ JSON Upload → S3 (medlaunch-assignment)
 
 See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed technical design.
 
-## ✨ Features
-
-### Stage 2: S3 and Athena Setup
-- ✅ Dual S3 bucket architecture (source and output)
-- ✅ Server-side encryption enabled
-- ✅ Versioning for data protection
-- ✅ Event notifications configured
-- ✅ Athena external table with JSON SerDe
-- ✅ Automated schema management
-
-### Stage 3: Event-Driven Lambda Processing
-- ✅ Automatic S3 event triggering
-- ✅ Intelligent timeout handling
-- ✅ Automatic retry mechanism (up to 2 retries)
-- ✅ Dead Letter Queue for failed events
-- ✅ Dual-format output (JSON + CSV)
-- ✅ Comprehensive error handling
-- ✅ CloudWatch logging and monitoring
-- ✅ Production-ready configuration
 
 ## 📁 Project Structure
 
