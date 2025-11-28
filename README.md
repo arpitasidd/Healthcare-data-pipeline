@@ -23,12 +23,7 @@
 
 ## 🎯 Overview
 
-This project implements an automated, event-driven pipeline for processing healthcare facility data. When JSON files containing facility information are uploaded to S3, the system automatically:
-
-1. Triggers a Lambda function
-2. Executes analytical queries using Amazon Athena
-3. Stores processed results in structured formats
-4. Handles errors with automatic retries
+This repository contains the implementation of Stage 1 (Data Extraction with Athena) and Stage 3 (Event-Driven Processing with Lambda) of the healthcare pipeline challenge. The solution implements a fully automated, serverless data processing pipeline for healthcare facility analytics.
 
 **Key Achievement**: Zero manual intervention required from upload to results delivery.
 
