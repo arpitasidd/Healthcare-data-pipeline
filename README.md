@@ -151,8 +151,7 @@ This implementation demonstrates a production-grade, event-driven data processin
 
 ## 👤 Author
 
-**Your Name**
-- Name: Arpita Siddhabhatti
+**Arpita Siddhabhatti**
 - Email: siddarpita09@gmail.com
 - GitHub: [@arpitasidd](https://github.com/arpitasidd)
 - LinkedIn: [Arpita Siddhabhatti](https://www.linkedin.com/in/arpita-siddhabhatti-17893b312/)
