@@ -30,6 +30,7 @@ This repository contains the implementation of Stage 1 (Data Extraction with Ath
 ### Stage 1: Data Extraction with Athena
 
 -Extract key facility metrics from nested JSON data in S3
+
 -Handle complex nested structures (services, labs, accreditations)
 -Create external tables with proper schema definitions
 -Generate comprehensive facility metrics using UNNEST operations
