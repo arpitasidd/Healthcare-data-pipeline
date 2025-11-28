@@ -1,304 +1,164 @@
-# Healthcare Facility Data Processing Pipeline
+# Healthcare Pipeline Challenge - Stages 1 & 3
 
-> Event-driven serverless data processing solution using AWS Lambda, S3, and Athena
-
-[![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20S3%20%7C%20Athena-orange)](https://aws.amazon.com/)
-[![Python](https://img.shields.io/badge/Python-3.9-blue)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Stages Implemented](#stages-implemented)
-- [Monitoring](#monitoring)
-- [Cost Estimation](#cost-estimation)
-- [Contributing](#contributing)
-- [License](#license)
-
-## 🎯 Overview
+## Overview
 
 This repository contains the implementation of Stage 1 (Data Extraction with Athena) and Stage 3 (Event-Driven Processing with Lambda) of the healthcare pipeline challenge. The solution implements a fully automated, serverless data processing pipeline for healthcare facility analytics.
 
 **Key Achievement**: Zero manual intervention required from upload to results delivery.
 ## Stages Implemented
+
 ### Stage 1: Data Extraction with Athena
-
--Extract key facility metrics from nested JSON data in S3
-
--Handle complex nested structures (services, labs, accreditations)
--Create external tables with proper schema definitions
--Generate comprehensive facility metrics using UNNEST operations
--Save query results to S3 in JSON format
+* Extract key facility metrics from nested JSON data in S3
+* Handle complex nested structures (services, labs, accreditations)
+* Create external tables with proper schema definitions
+* Generate comprehensive facility metrics using UNNEST operations
+* Save query results to S3 in JSON format
 
 ### Stage 3: Event-Driven Processing with Lambda
+* Automatic triggering on JSON file uploads to S3
+* Execute Athena queries to count accredited facilities by state
+* Intelligent timeout and retry handling mechanisms
+* Store results in multiple formats (JSON and CSV)
+* Comprehensive error handling and CloudWatch logging
+* Dead Letter Queue for failed invocations
 
--Automatic triggering on JSON file uploads to S3
--Execute Athena queries to count accredited facilities by state
--Intelligent timeout and retry handling mechanisms
--Store results in multiple formats (JSON and CSV)
--Comprehensive error handling and CloudWatch logging
--Dead Letter Queue for failed invocations
 ## Tools Used
+* **AWS Lambda**: Serverless compute for event-driven processing
+* **Amazon Athena**: Serverless SQL analytics for querying S3 data
+* **Amazon S3**: Data storage for input files and query results
+* **AWS Glue Data Catalog**: Schema registry and metadata store
+* **CloudWatch**: Monitoring, logging, and alerting
+* **IAM**: Secure access control and permissions management
+* **CloudFormation**: Infrastructure as Code for reproducible deployments
 
--AWS Lambda: Serverless compute for event-driven processing
--Amazon Athena: Serverless SQL analytics for querying S3 data
--Amazon S3: Data storage for input files and query results
--AWS Glue Data Catalog: Schema registry and metadata store
--CloudWatch: Monitoring, logging, and alerting
--IAM: Secure access control and permissions management
--CloudFormation: Infrastructure as Code for reproducible deployments
-
-## 🏗️ Architecture
-
-![Architecture Diagram](docs/architecture/architecture-diagram.png)
-
-### Data Flow
+## Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                     Data Flow Pipeline                       │
+└─────────────────────────────────────────────────────────────┘
+
 JSON Upload → S3 (medlaunch-assignment)
-                ↓ (S3 Event Notification)
-             Lambda Function
+                ↓
+            S3 Event Notification
+                ↓
+            Lambda Function (Auto-triggered)
                 ↓
         ┌───────┴────────┐
         ↓                ↓
-    Athena Query    Store Results
-    (Analytics)     (S3 Output Bucket)
+  Athena Query      Store Results
+  (Analytics)    (medlaunch-query-output)
         ↓
-   JSON + CSV Results
+  Database/Table Creation
+        ↓
+  UNNEST & Aggregation
+        ↓
+  Results → JSON + CSV
 ```
 
-See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed technical design.
+## Demo Link
+*[Insert your Loom demo link here]*
 
+## Implementation Summary
 
-## 📁 Project Structure
+### Technical Approach
+
+My solution implements a production-ready, event-driven healthcare data pipeline using AWS serverless technologies with a focus on automation, scalability, and maintainability.
+
+**Stage 1: Athena Data Extraction**
+
+For the data extraction layer, I designed a robust Athena schema that handles the complex nested JSON structure of healthcare facility data. The implementation uses AWS Glue's JSON SerDe to parse nested structures including arrays of services, labs with certifications, and accreditations with expiration dates. The key innovation in my approach is the dynamic table creation within the Lambda function itself - rather than requiring manual Athena setup, the Lambda function automatically creates the database and external table on first run, pointing to the S3 data location.
+
+The extraction query leverages SQL UNNEST operations to flatten nested arrays, specifically extracting the first accreditation's expiry date while counting total services offered. This approach efficiently handles one-to-many relationships in the data model without requiring table normalization, keeping the query simple while maintaining performance. The query extracts five critical metrics: `facility_id`, `facility_name`, `employee_count`, `number_of_offered_services`, and `expiry_date_of_first_accreditation`, providing a comprehensive view of each facility's operational status.
+
+**Stage 3: Event-Driven Lambda Processing**
+
+The Lambda implementation represents a sophisticated event-driven architecture that automatically processes new data uploads without manual intervention. When a JSON file is uploaded to the source S3 bucket, an S3 event notification immediately triggers the Lambda function, which then orchestrates the entire analytics pipeline. The function implements intelligent timeout management by monitoring the Lambda context's remaining execution time, ensuring queries complete before the function times out (default 5 minutes, configurable up to 15 minutes).
+
+A critical feature is the retry and error handling mechanism. The solution implements a three-tier approach: immediate retry logic within the function, Lambda's built-in asynchronous retry (configured for 2 retries), and a Dead Letter Queue (DLQ) that captures permanently failed events for investigation. This ensures no data is lost due to transient failures. The Lambda function executes a production-ready Athena query that counts accredited facilities per state, including only currently valid accreditations by filtering on expiry dates, and aggregates employee counts and accreditation totals.
+
+Results are stored in two formats: structured JSON with metadata (query execution ID, timestamp, source file) for programmatic access, and raw CSV from Athena for traditional analytics tools. This dual-format approach supports both automated downstream processing and manual analysis by data analysts.
+
+### Challenges and Solutions
+
+**Challenge 1: Handling Nested JSON in Athena**
+The most significant technical challenge was designing an Athena schema that properly handles deeply nested JSON structures with arrays of objects. Healthcare facility data contains multiple levels of nesting: services as string arrays, labs as arrays of objects with nested certification arrays, and accreditations as arrays of objects. I resolved this by using the `org.openx.data.jsonserde.JsonSerDe` serializer with carefully defined struct and array types in the CREATE TABLE statement. This approach allows Athena to parse complex structures without requiring data transformation, while still enabling efficient querying through UNNEST operations.
+
+**Challenge 2: Lambda Timeout Management**
+Athena queries can take variable time to complete depending on data volume and query complexity. With Lambda's maximum execution time of 15 minutes, there was a risk of timeout before query completion. I implemented a sophisticated timeout handling mechanism that monitors the Lambda context's `get_remaining_time_in_millis()` method and adjusts the polling behavior accordingly. The function keeps a 10-second buffer before the Lambda timeout, allowing graceful failure and retry rather than abrupt termination. This ensures queries that need more time are retried in a new invocation rather than being abandoned mid-execution.
+
+**Challenge 3: Ensuring Data Pipeline Reliability**
+In a production environment, the pipeline must handle various failure scenarios: S3 notification delays, Athena service throttling, transient network issues, and malformed input data. I addressed this through multiple defensive programming strategies: comprehensive try-catch blocks with detailed logging, validation of file extensions before processing, the Dead Letter Queue for capturing failed events, and idempotent table creation (using IF NOT EXISTS clauses) so the function can safely run multiple times on the same data. Additionally, I implemented CloudWatch integration for real-time monitoring and alerting, enabling proactive issue detection.
+
+**Challenge 4: Managing AWS Permissions**
+Cross-service operations required careful IAM policy configuration. The Lambda function needs permissions across multiple AWS services: S3 read from the source bucket, S3 write to the output bucket, Athena query execution, Glue catalog operations for database/table creation, and CloudWatch Logs for monitoring. I designed a least-privilege IAM policy that grants only necessary permissions, following AWS security best practices. The CloudFormation template automates this policy creation, ensuring consistent and secure deployments across environments.
+
+## Key Features
+
+### Automation & Scalability
+- **Zero manual intervention**: Entire pipeline runs automatically on file upload
+- **Serverless architecture**: Scales automatically with data volume
+- **Concurrent processing**: Handles multiple file uploads simultaneously
+- **Cost-efficient**: Pay only for actual compute time (seconds)
+
+### Reliability & Monitoring
+- **Automatic retries**: Up to 2 retries on failures with exponential backoff
+- **Dead Letter Queue**: Captures failed events for troubleshooting
+- **CloudWatch integration**: Real-time logs and metrics
+- **Timeout protection**: Intelligent query completion monitoring
+
+### Data Quality
+- **Schema validation**: Ensures JSON structure matches expected format
+- **Null filtering**: Handles missing or malformed data gracefully
+- **Date validation**: Filters expired accreditations automatically
+- **Result verification**: Stores execution metadata with results
+
+## Repository Structure
 
 ```
-├── README.md                          # Main documentation
-├── lambda/
-│   ├── lambda_function.py            # Main Lambda handler
-│   ├── requirements.txt              # Python dependencies
-│   └── tests/
-│       └── test_lambda.py            # Unit tests
-├── infrastructure/
-│   ├── cloudformation-template.yaml  # IaC deployment
-│   └── iam-policy.json              # IAM permissions
-├── docs/
-│   ├── ARCHITECTURE.md              # Architecture details
-│   ├── DEPLOYMENT.md                # Deployment guide
-│   ├── TESTING.md                   # Testing guide
-│   └── architecture/
-│       ├── architecture-diagram.png
-│       ├── data-flow-diagram.png
-│       └── sequence-diagram.png
-├── sample-data/
-│   └── sample_data.jsonl            # Test data
-└── scripts/
-    ├── setup.sh                     # Automated setup
-    └── deploy.sh                    # Deployment script
+├── lambda_function.py           # Main Lambda function code
+├── cloudformation-template.yaml # Infrastructure as Code
+├── lambda-policy.json           # IAM permissions
+├── deployment-guide.md          # Step-by-step setup instructions
+├── sample_data.jsonl           # Test data file
+└── README.md                   # This file
 ```
 
-## 🔧 Prerequisites
 
-- AWS Account with appropriate permissions
-- AWS CLI configured (`aws configure`)
-- Python 3.9 or higher
-- Basic understanding of AWS services (S3, Lambda, Athena)
 
-## 📦 Installation
+## Future Enhancements
 
-### Option 1: Quick Deploy with CloudFormation (Recommended)
+1. **Data Partitioning**: Implement date-based partitions for large datasets
+2. **SNS Notifications**: Alert on query completion or failures
+3. **Step Functions**: Orchestrate complex multi-stage workflows
+4. **Data Quality Checks**: Validate data before processing
+5. **Real-time Dashboard**: Visualize metrics using QuickSight
+6. **API Gateway**: Expose results via REST API
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/healthcare-data-pipeline.git
-cd healthcare-data-pipeline
+## Lessons Learned
 
-# Deploy using CloudFormation
-aws cloudformation create-stack \
-  --stack-name medlaunch-processor \
-  --template-body file://infrastructure/cloudformation-template.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
+1. **Serverless is Production-Ready**: AWS Lambda with proper error handling is reliable for production workloads
+2. **Athena's Power**: Complex analytics on S3 data without managing infrastructure
+3. **IaC is Essential**: CloudFormation enables reproducible, version-controlled deployments
+4. **Monitoring from Day 1**: CloudWatch integration should be built-in, not added later
+5. **Cost Optimization**: Proper query design and data format selection significantly impact costs
 
-# Wait for deployment to complete (3-5 minutes)
-aws cloudformation wait stack-create-complete \
-  --stack-name medlaunch-processor
-```
+## Conclusion
 
-### Option 2: Manual Setup
+This implementation demonstrates a production-grade, event-driven data processing pipeline that combines the power of AWS serverless technologies. The solution is cost-effective, scalable, reliable, and maintainable - suitable for real-world healthcare analytics workloads. The automated nature of the pipeline, coupled with robust error handling and monitoring, makes it a strong foundation for building more complex data processing workflows.
 
-Follow the detailed steps in [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
-## 🚀 Usage
-
-### Upload Data for Processing
-
-```bash
-# Upload a JSON file
-aws s3 cp sample-data/sample_data.jsonl s3://medlaunch-assignment/
-
-# Monitor Lambda execution
-aws logs tail /aws/lambda/MedLaunchProcessor --follow
-
-# Check results
-aws s3 ls s3://medlaunch-query-output/processed-results/
-```
-
-### Expected Output
-
-Results are stored in two formats:
-
-**JSON Format** (`processed-results/`):
-```json
-{
-  "query_execution_id": "abc123-def456",
-  "source_file": "sample_data.jsonl",
-  "execution_time": "2024-11-20T10:30:00",
-  "result_count": 3,
-  "results": [
-    {
-      "state": "TX",
-      "facility_count": "1",
-      "total_employees": "250",
-      "total_accreditations": "2"
-    }
-  ]
-}
-```
-
-**CSV Format** (`csv-results/`):
-Raw Athena query results in CSV format.
-
-## 📊 Stages Implemented
-
-### Stage 2: Infrastructure Setup
-
-**Deliverables:**
-- S3 bucket configuration with event notifications
-- Athena database and external table creation
-- Security configurations (encryption, IAM)
-
-**Key Files:**
-- `infrastructure/cloudformation-template.yaml`
-- `docs/ARCHITECTURE.md`
-
-### Stage 3: Event-Driven Processing
-
-**Deliverables:**
-- Lambda function with timeout handling
-- Automatic retry mechanisms
-- Query execution and result storage
-- Comprehensive error handling
-
-**Key Files:**
-- `lambda/lambda_function.py`
-- `infrastructure/iam-policy.json`
-- `docs/DEPLOYMENT.md`
-
-## 📈 Monitoring
-
-### CloudWatch Metrics
-
-Monitor these key metrics in AWS Console:
-
-- **Invocations**: Total processing requests
-- **Duration**: Average execution time
-- **Errors**: Failed invocations
-- **Throttles**: Rate limiting occurrences
-
-### Alarms Configured
-
-- Error rate > 5 in 5 minutes
-- Average duration > 4 minutes (approaching timeout)
-- Dead Letter Queue messages received
-
-### View Logs
-
-```bash
-# Real-time logs
-aws logs tail /aws/lambda/MedLaunchProcessor --follow
-
-# Search for errors
-aws logs filter-log-events \
-  --log-group-name /aws/lambda/MedLaunchProcessor \
-  --filter-pattern "ERROR"
-```
-
-## 💰 Cost Estimation
-
-Estimated monthly costs for 1,000 file uploads:
-
-| Service | Usage | Cost |
-|---------|-------|------|
-| Lambda | 1,000 invocations × 30s | $0.01 |
-| Athena | 1GB scanned | $0.01 |
-| S3 Storage | 10GB | $0.23 |
-| S3 Requests | 2,000 PUT/GET | $0.01 |
-| **Total** | | **~$0.26/month** |
-
-*Costs vary by region and actual usage*
-
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-cd lambda
-python -m pytest tests/
-```
-
-For detailed testing procedures, see [TESTING.md](docs/TESTING.md)
-
-## 🔒 Security
-
-- S3 bucket encryption enabled (AES-256)
-- IAM roles follow least privilege principle
-- No hardcoded credentials
-- VPC support ready (optional)
-- CloudTrail logging enabled
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
 ## 👤 Author
 
 **Your Name**
+- Name: Arpita Siddhabhatti
+- Email: siddarpita09@gmail.com
 - GitHub: [@arpitasidd](https://github.com/arpitasidd)
 - LinkedIn: [Arpita Siddhabhatti](https://www.linkedin.com/in/arpita-siddhabhatti-17893b312/)
 
-## 🙏 Acknowledgments
 
-- AWS Documentation
-- Healthcare data standards (HL7, FHIR)
-- Open source community
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Documentation](docs/)
-2. Search [Issues](https://github.com/yourusername/healthcare-data-pipeline/issues)
-3. Create a new issue with detailed information
-
----
-
-**Project Status**: ✅ Production Ready
+**Project Status**: Production Ready
 
 **Last Updated**: November 2024# Healthcare-data-pipeline
 Event-driven serverless data processing pipeline for healthcare facility data using AWS Lambda, S3, and Athena with automatic retry and timeout handling.
