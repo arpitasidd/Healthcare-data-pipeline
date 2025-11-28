@@ -29,7 +29,6 @@ This repository contains the implementation of Stage 1 (Data Extraction with Ath
 * **AWS Glue Data Catalog**: Schema registry and metadata store
 * **CloudWatch**: Monitoring, logging, and alerting
 * **IAM**: Secure access control and permissions management
-* **CloudFormation**: Infrastructure as Code for reproducible deployments
 
 ## Architecture
 
