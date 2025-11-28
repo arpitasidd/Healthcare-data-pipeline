@@ -277,7 +277,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Your Name**
 - GitHub: [@arpitasidd](https://github.com/arpitasidd)
-- LinkedIn: [Arpita Siddhabhatti](https://linkedin.com/in/Arpita Siddhabhatti)
+- LinkedIn: [Arpita Siddhabhatti](https://linkedin.com/in/ArpitaSiddhabhatti)
 
 ## 🙏 Acknowledgments
 
