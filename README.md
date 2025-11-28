@@ -26,7 +26,6 @@
 This repository contains the implementation of Stage 1 (Data Extraction with Athena) and Stage 3 (Event-Driven Processing with Lambda) of the healthcare pipeline challenge. The solution implements a fully automated, serverless data processing pipeline for healthcare facility analytics.
 
 **Key Achievement**: Zero manual intervention required from upload to results delivery.
-
 ## Stages Implemented
 ### Stage 1: Data Extraction with Athena
 
@@ -44,7 +43,6 @@ Intelligent timeout and retry handling mechanisms
 Store results in multiple formats (JSON and CSV)
 Comprehensive error handling and CloudWatch logging
 Dead Letter Queue for failed invocations
-
 ## Tools Used
 
 AWS Lambda: Serverless compute for event-driven processing
