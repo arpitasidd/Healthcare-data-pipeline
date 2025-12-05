@@ -56,7 +56,7 @@ JSON Upload → S3 (medlaunch-assignment)
 ```
 
 ## Demo Link
-*[[Insert your Loom demo link here](https://www.loom.com/share/b7b1842e4ae6416d9fc25eac2ad293bc)]*
+*[(https://www.loom.com/share/b7b1842e4ae6416d9fc25eac2ad293bc)]*
 
 ## Implementation Summary
 
