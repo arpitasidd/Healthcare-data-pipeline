@@ -112,17 +112,6 @@ Cross-service operations required careful IAM policy configuration. The Lambda f
 - **Date validation**: Filters expired accreditations automatically
 - **Result verification**: Stores execution metadata with results
 
-## Repository Structure
-
-```
-├── lambda_function.py           # Main Lambda function code
-├── cloudformation-template.yaml # Infrastructure as Code
-├── lambda-policy.json           # IAM permissions
-├── deployment-guide.md          # Step-by-step setup instructions
-├── sample_data.jsonl           # Test data file
-└── README.md                   # This file
-```
-
 
 
 ## Future Enhancements
