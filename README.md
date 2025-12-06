@@ -53,7 +53,72 @@ JSON Upload → S3 (medlaunch-assignment)
   UNNEST & Aggregation
         ↓
   Results → JSON + CSV
+  
 ```
+                        ┌─────────────────────────────┐
+                        │     Stage 1: Athena SQL      │
+                        └───────────────┬──────────────┘
+                                        │
+                         (1) Upload Healthcare JSON
+                                        │
+                                        ▼
+                          ┌──────────────────────────┐
+                          │      Amazon S3 (Raw)      │
+                          │  medlaunch-assignment/    │
+                          └───────────────┬───────────┘
+                                          │
+                           (2) Athena reads nested JSON
+                                          │
+                                          ▼
+                          ┌──────────────────────────┐
+                          │       Amazon Athena       │
+                          │ • Extract facility_id      │
+                          │ • Count services           │
+                          │ • First accreditation date │
+                          └───────────────┬───────────┘
+                                          │
+                             (3) Results saved to S3
+                                          │
+                                          ▼
+                          ┌──────────────────────────┐
+                          │   S3 Query Output Bucket  │
+                          │ medlaunch-query-output/   │
+                          └──────────────────────────┘
+
+
+
+                        ┌──────────────────────────────┐
+                        │ Stage 3: Event-Driven Lambda  │
+                        └───────────────┬──────────────┘
+                                        │
+                      (4) S3 Event: New JSON uploaded
+                                        │
+                                        ▼
+                          ┌──────────────────────────┐
+                          │        AWS Lambda        │
+                          │ • Triggered on upload     │
+                          │ • Runs Athena query       │
+                          │ • Retries + timeout logic │
+                          └───────────────┬──────────┘
+                                          │
+                             (5) Lambda executes SQL
+                                          │
+                                          ▼
+                          ┌──────────────────────────┐
+                          │       Amazon Athena       │
+                          │ • Accredited facilities   │
+                          │   per state               │
+                          └───────────────┬──────────┘
+                                          │
+                           (6) Save results to S3
+                                          │
+                        ┌─────────────────┼─────────────────┐
+                        ▼                 ▼                 ▼
+              ┌────────────────┐  ┌────────────────┐  ┌───────────────────┐
+              │ S3 JSON Output │  │ S3 CSV Output  │  │ CloudWatch Logs    │
+              │ stage3/json/   │  │ stage3/csv/    │  │ • Execution logs    │
+              └────────────────┘  └────────────────┘  │ • Error handling    │
+                                                      └───────────────────┘
 
 ## Demo Link
 *[(https://www.loom.com/share/b7b1842e4ae6416d9fc25eac2ad293bc)]*
